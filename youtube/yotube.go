@@ -630,6 +630,12 @@ func parseMeta(video_id, query_string string) (*Video, error) {
 
 	var player_response playerResponse
 	json.Unmarshal([]byte(query.Get("player_response")), &player_response)
+	
+	var thumbnailURL string
+	
+	if len(player_response.VideoDetails.Thumbnail.Thumbnail) > 0 {
+		thumbnailURL = player_response.VideoDetails.Thumbnail.Thumbnails[0].URL
+	}
 
 	// collate the necessary params
 	video := &Video{
@@ -637,7 +643,7 @@ func parseMeta(video_id, query_string string) (*Video, error) {
 		Title:         player_response.VideoDetails.Title,
 		Author:        player_response.VideoDetails.Author,
 		Keywords:      fmt.Sprint(player_response.VideoDetails.Keywords),
-		Thumbnail_url: player_response.VideoDetails.Thumbnail.Thumbnails[0].URL,
+		Thumbnail_url: thumbnailURL,
 	}
 
 	v, _ := strconv.Atoi(player_response.VideoDetails.ViewCount)
