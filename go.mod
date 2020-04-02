@@ -1,3 +1,3 @@
-module github.com/knadh/go-get-youtube
+module go.ajitem.com/go-get-youtube
 
 go 1.12
