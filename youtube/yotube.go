@@ -633,7 +633,7 @@ func parseMeta(video_id, query_string string) (*Video, error) {
 	
 	var thumbnailURL string
 	
-	if len(player_response.VideoDetails.Thumbnail.Thumbnail) > 0 {
+	if len(player_response.VideoDetails.Thumbnail.Thumbnails) > 0 {
 		thumbnailURL = player_response.VideoDetails.Thumbnail.Thumbnails[0].URL
 	}
 
