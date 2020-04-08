@@ -1,11 +1,11 @@
 /**
-	go-get-youtube v0.2
+	go-get-youtube v0.3
 
 	A tiny Go library that can fetch Youtube video metadata
 	and download videos.
 
-	Kailash Nadh, http://nadh.in
-	27 February 2014
+	Ajitem Sahasrabuddhe, http://ajitem.com
+	8 April 2019
 
 	License: GPL v2
 **/
@@ -34,7 +34,7 @@ import (
 
 const (
 	// Youtube video meta source url
-	URL_META = "https://www.youtube.com/get_video_info?&video_id="
+	UrlMeta = "https://www.youtube.com/get_video_info?&video_id="
 )
 
 const (
@@ -50,16 +50,16 @@ var (
 
 // holds a video's information
 type Video struct {
-	Id, Title, Author, Keywords, Thumbnail_url string
-	Avg_rating                                 float32
-	View_count, Length_seconds                 int
-	Formats                                    []Format
-	Filename                                   string
+	Id, Title, Author, Keywords, ThumbnailUrl string
+	AvgRating                                 float32
+	ViewCount, LengthSeconds                  int
+	Formats                                   []Format
+	Filename                                  string
 }
 
 type Format struct {
-	Itag                     int
-	Video_type, Quality, Url string
+	ITag                    int
+	VideoType, Quality, Url string
 }
 
 // Download options
@@ -83,6 +83,7 @@ type playerResponse struct {
 	PlayabilityStatus struct {
 		Status          string `json:"status"`
 		PlayableInEmbed bool   `json:"playableInEmbed"`
+		Reason          string `json:"reason"`
 	} `json:"playabilityStatus"`
 	StreamingData struct {
 		ExpiresInSeconds string `json:"expiresInSeconds"`
@@ -382,10 +383,10 @@ func Get(video_id string) (Video, error) {
 	if strings.Contains(video_id, "youtube.com/watch?") {
 		video_id, _ = extractId(video_id)
 	}
-	
+
 	// fetch video meta from youtube
 	query_string, err := fetchMeta(video_id)
-	
+
 	if err != nil {
 		return Video{}, err
 	}
@@ -568,11 +569,11 @@ func printProgress(out *os.File, offset, length int64) {
 		}
 		if clear == "" {
 			switch runtime.GOOS {
-				case "darwin":
-					clear = "\033[A\033[2K\r"
-				case "linux":
-					clear = "\033[A\033[2K\r"
-				case "windows":
+			case "darwin":
+				clear = "\033[A\033[2K\r"
+			case "linux":
+				clear = "\033[A\033[2K\r"
+			case "windows":
 			}
 		}
 	}
@@ -581,7 +582,7 @@ func printProgress(out *os.File, offset, length int64) {
 // figure out the file extension from a codec string
 func (v *Video) GetExtension(index int) string {
 	for _, format := range Formats {
-		if strings.Contains(v.Formats[index].Video_type, format) {
+		if strings.Contains(v.Formats[index].VideoType, format) {
 			return format
 		}
 	}
@@ -589,11 +590,11 @@ func (v *Video) GetExtension(index int) string {
 	return "avi"
 }
 
-// Returns video format index by Itag number, or nil if unknown
+// Returns video format index by ITag number, or nil if unknown
 func (v *Video) IndexByItag(itag int) (int, *Format) {
 	for i := range v.Formats {
 		format := &v.Formats[i]
-		if format.Itag == itag {
+		if format.ITag == itag {
 			return i, format
 		}
 	}
@@ -602,7 +603,7 @@ func (v *Video) IndexByItag(itag int) (int, *Format) {
 
 // fetch video meta from http
 func fetchMeta(video_id string) (string, error) {
-	resp, err := http.Get(URL_META + video_id)
+	resp, err := http.Get(UrlMeta + video_id)
 
 	// fetch the meta information from http
 	if err != nil {
@@ -630,29 +631,33 @@ func parseMeta(video_id, query_string string) (*Video, error) {
 
 	var player_response playerResponse
 	json.Unmarshal([]byte(query.Get("player_response")), &player_response)
-	
+
 	var thumbnailURL string
-	
+
+	if player_response.PlayabilityStatus.Status == "ERROR" {
+		return nil, errors.New(player_response.PlayabilityStatus.Reason)
+	}
+
 	if len(player_response.VideoDetails.Thumbnail.Thumbnails) > 0 {
 		thumbnailURL = player_response.VideoDetails.Thumbnail.Thumbnails[0].URL
 	}
 
 	// collate the necessary params
 	video := &Video{
-		Id:            video_id,
-		Title:         player_response.VideoDetails.Title,
-		Author:        player_response.VideoDetails.Author,
-		Keywords:      fmt.Sprint(player_response.VideoDetails.Keywords),
-		Thumbnail_url: thumbnailURL,
+		Id:           video_id,
+		Title:        player_response.VideoDetails.Title,
+		Author:       player_response.VideoDetails.Author,
+		Keywords:     fmt.Sprint(player_response.VideoDetails.Keywords),
+		ThumbnailUrl: thumbnailURL,
 	}
 
 	v, _ := strconv.Atoi(player_response.VideoDetails.ViewCount)
-	video.View_count = v
-	
-	video.Avg_rating = float32(player_response.VideoDetails.AverageRating)
+	video.ViewCount = v
+
+	video.AvgRating = float32(player_response.VideoDetails.AverageRating)
 
 	l, _ := strconv.Atoi(player_response.VideoDetails.LengthSeconds)
-	video.Length_seconds = l
+	video.LengthSeconds = l
 
 	// further decode the format data
 	format_params := strings.Split(query.Get("url_encoded_fmt_stream_map"), ",")
@@ -665,10 +670,10 @@ func parseMeta(video_id, query_string string) (*Video, error) {
 		itag, _ := strconv.Atoi(fquery.Get("itag"))
 
 		video.Formats = append(video.Formats, Format{
-			Itag:       itag,
-			Video_type: fquery.Get("type"),
-			Quality:    fquery.Get("quality"),
-			Url:        fquery.Get("url"),
+			ITag:      itag,
+			VideoType: fquery.Get("type"),
+			Quality:   fquery.Get("quality"),
+			Url:       fquery.Get("url"),
 		})
 	}
 

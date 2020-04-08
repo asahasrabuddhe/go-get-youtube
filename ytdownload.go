@@ -45,11 +45,11 @@ func printVideoMeta(video youtube.Video) {
 	Views	:	%d
 	Rating	:	%f`
 
-	fmt.Printf(txt, video.Id, video.Title, video.Author, video.View_count, video.Avg_rating)
+	fmt.Printf(txt, video.Id, video.Title, video.Author, video.ViewCount, video.AvgRating)
 	fmt.Println("\n\n\tFormats")
 
 	for i := 0; i < len(video.Formats); i++ {
-		fmt.Printf("\t%d\tItag %d: %s\t%s\n", i, video.Formats[i].Itag, video.Formats[i].Quality, video.Formats[i].Video_type)
+		fmt.Printf("\t%d\tITag %d: %s\t%s\n", i, video.Formats[i].ITag, video.Formats[i].Quality, video.Formats[i].VideoType)
 	}
 	fmt.Println()
 	fmt.Println()
@@ -88,7 +88,7 @@ func main() {
 	// get the video id from the command line
 	video_id := flag.String("id", "", "Youtube video ID to download")
 	resume := flag.Bool("resume", false, "Resume cancelled download")
-	itag := flag.Int("itag", 0, "Select video format by Itag number")
+	itag := flag.Int("itag", 0, "Select video format by ITag number")
 	rename := flag.Bool("rename", false, "Rename downloaded file using video title")
 	mp3 := flag.Bool("mp3", false, "Extract MP3 audio using ffmpeg")
 	flag.Parse()
@@ -118,11 +118,11 @@ func main() {
 	if *itag > 0 {
 		idx, format := video.IndexByItag(*itag)
 		if format == nil {
-			fmt.Println("Unknown Itag number:", *itag)
+			fmt.Println("Unknown ITag number:", *itag)
 			os.Exit(1)
 		}
 		index = idx
-		fmt.Printf("Selected: %s %s\n", format.Video_type, format.Quality)
+		fmt.Printf("Selected: %s %s\n", format.VideoType, format.Quality)
 	} else {
 		max := len(video.Formats) - 1
 		index = getItag(max)
