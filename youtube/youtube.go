@@ -619,7 +619,10 @@ func fetchMeta(video_id string) (string, error) {
 // parse youtube video metadata and return a Video object
 func parseMeta(video_id, query_string string) (*Video, error) {
 	// parse the query string
-	u, _ := url.Parse("?" + query_string)
+	u, err := url.Parse("?" + query_string)
+	if err != nil {
+		return nil, err
+	}
 
 	// parse url params
 	query := u.Query()
